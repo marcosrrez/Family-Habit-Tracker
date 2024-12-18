@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Habit Orbit</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f4f6f7;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .habit-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .habit-name {
+            font-weight: 600;
+            font-size: 1.2em;
+            color: var(--primary-color);
+        }
+
+        .habit-stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .habit-streak, .habit-score {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .orbit-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .orbit-day {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .orbit-day:hover {
+            opacity: 0.8;
+        }
+
+        .orbit-day.completed {
+            background-color: var(--secondary-color);
+        }
+
+        .orbit-day.partial {
+            background-color: var(--primary-color);
+        }
+
+        .add-habit-form {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .add-habit-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .add-habit-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-habit-button:hover {
+            background-color: #2980b9;
+        }
+
+        .family-members {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .family-member {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .family-member.active {
+            opacity: 1;
+            box-shadow: 0 0 0 3px var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <h1>Family Habit Orbit 🌟</h1>
+
+    <div id="family-members" class="family-members">
+        <div class="family-member" data-member="Dad">D</div>
+        <div class="family-member" data-member="Mom">M</div>
+        <div class="family-member" data-member="Child1">C1</div>
+        <div class="family-member" data-member="Child2">C2</div>
+    </div>
+
+    <div id="habits-container"></div>
+
+    <form id="add-habit-form" class="add-habit-form">
+        <input type="text" id="habit-input" class="add-habit-input" placeholder="Enter a new family habit" required>
+        <button type="submit" class="add-habit-button">Add Habit</button>
+    </form>
+
+    <script>
+        class FamilyHabitTracker {
+            constructor() {
+                this.habits = JSON.parse(localStorage.getItem('familyHabits')) || [];
+                this.activeFamilyMember = null;
+                this.setupEventListeners();
+                this.renderHabits();
+                this.setupFamilyMemberSelection();
+            }
+
+            setupFamilyMemberSelection() {
+                const familyMembers = document.querySelectorAll('.family-member');
+                familyMembers.forEach(member => {
+                    member.addEventListener('click', () => {
+                        familyMembers.forEach(m => m.classList.remove('active'));
+                        member.classList.add('active');
+                        this.activeFamilyMember = member.dataset.member;
+                        this.renderHabits();
+                    });
+                });
+            }
+
+            setupEventListeners() {
+                const form = document.getElementById('add-habit-form');
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('habit-input');
+                    this.addHabit(input.value);
+                    input.value = '';
+                });
+            }
+
+            addHabit(name) {
+                const newHabit = {
+                    id: Date.now(),
+                    name,
+                    completedDays: {},
+                    familyMembers: ['Dad', 'Mom', 'Child1', 'Child2']
+                };
+                this.habits.push(newHabit);
+                this.saveHabits();
+                this.renderHabits();
+            }
+
+            toggleDay(habitId, member, dayIndex) {
+                if (!this.activeFamilyMember) {
+                    alert('Please select a family member first!');
+                    return;
+                }
+
+                const habit = this.habits.find(h => h.id === habitId);
+                const memberKey = `${member}_${dayIndex}`;
+
+                if (!habit.completedDays[memberKey]) {
+                    habit.completedDays[memberKey] = true;
+                } else {
+                    delete habit.completedDays[memberKey];
+                }
+
+                this.saveHabits();
+                this.renderHabits();
+            }
+
+            calculateStreak(completedDays, member) {
+                const memberCompletedDays = Object.keys(completedDays)
+                    .filter(key => key.startsWith(member + '_'))
+                    .map(key => parseInt(key.split('_')[1]));
+
+                let maxStreak = 0;
+                let currentStreak = 0;
+
+                const sortedDays = memberCompletedDays.sort((a, b) => a - b);
+
+                for (let i = 0; i < sortedDays.length; i++) {
+                    if (i === 0 || sortedDays[i] === sortedDays[i-1] + 1) {
+                        currentStreak++;
+                        maxStreak = Math.max(maxStreak, currentStreak);
+                    } else {
+                        currentStreak = 1;
+                    }
+                }
+
+                return maxStreak;
+            }
+
+            saveHabits() {
+                localStorage.setItem('familyHabits', JSON.stringify(this.habits));
+            }
+
+            renderHabits() {
+                const container = document.getElementById('habits-container');
+                container.innerHTML = '';
+
+                this.habits.forEach(habit => {
+                    const habitElement = document.createElement('div');
+                    habitElement.classList.add('habit-container');
+
+                    const headerElement = document.createElement('div');
+                    headerElement.classList.add('habit-header');
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.classList.add('habit-name');
+                    nameSpan.textContent = habit.name;
+
+                    const statsElement = document.createElement('div');
+                    statsElement.classList.add('habit-stats');
+
+                    if (this.activeFamilyMember) {
+                        const streakSpan = document.createElement('span');
+                        streakSpan.classList.add('habit-streak');
+                        streakSpan.textContent = `🔥 ${this.calculateStreak(habit.completedDays, this.activeFamilyMember)}`;
+                        statsElement.appendChild(streakSpan);
+                    }
+
+                    headerElement.appendChild(nameSpan);
+                    headerElement.appendChild(statsElement);
+                    habitElement.appendChild(headerElement);
+
+                    const calendarElement = document.createElement('div');
+                    calendarElement.classList.add('orbit-calendar');
+
+                    // Create 30 day boxes
+                    for (let i = 0; i < 30; i++) {
+                        const dayBox = document.createElement('div');
+                        dayBox.classList.add('orbit-day');
+                        
+                        if (this.activeFamilyMember) {
+                            const memberKey = `${this.activeFamilyMember}_${i}`;
+                            if (habit.completedDays[memberKey]) {
+                                dayBox.classList.add('completed');
+                            }
+
+                            dayBox.addEventListener('click', () => this.toggleDay(habit.id, this.activeFamilyMember, i));
+                        }
+
+                        calendarElement.appendChild(dayBox);
+                    }
+
+                    habitElement.appendChild(calendarElement);
+                    container.appendChild(habitElement);
+                });
+            }
+        }
+
+        // Initialize the Family Habit Tracker
+        const familyHabitTracker = new FamilyHabitTracker();
+    </script>
+</body>
+</html>
